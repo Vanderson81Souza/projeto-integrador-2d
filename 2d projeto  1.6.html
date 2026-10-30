@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Bancada Automática de Troca Térmica - Mecatrônica v2</title>
+ <style>
+ :root {
+ --bg-cad: #f8fafc;
+ --metal-dark: #1e293b;
+ --metal-light: #94a3b8;
+ --acrylic: rgba(186, 230, 253, 0.2);
+ --acrylic-border: rgba(56, 189, 248, 0.5);
+ --polyurethane-blue: #0284c7;
+ --stainless: linear-gradient(90deg, #94a3b8 0%, #f1f5f9 25%, #cbd5e1 50%, #e2e8f0 80%, #64748b 100%);
+ --led-green: #22c55e;
+ --led-red: #ef4444;
+ --water-color: rgba(14, 165, 233, 0.35);
+ --water-border: #0284c7;
+ }
+
+ * {
+ box-sizing: border-box;
+ }
+
+ body {
+ margin: 0;
+ padding: 10px;
+ font-family: 'Segoe UI', system-ui, sans-serif;
+ background-color: #f1f5f9;
+ display: flex;
+ flex-direction: column;
+ min-height: 100vh;
+ height: 100vh;
+ color: #0f172a;
+ overflow: hidden;
+ position: relative;
+ }
+
+ /* Assinatura Marca d'água */
+ .watermark {
+ position: absolute;
+ bottom: 10px;
+ left: 15px;
+ font-family: monospace;
+ font-size: 14px;
+ font-weight: bold;
+ color: rgba(100, 116, 139, 0.3);
+ z-index: 999;
+ pointer-events: none;
+ user-select: none;
+ }
+
+ h1 {
+ font-size: 18px;
+ margin: 0;
+ text-transform: uppercase;
+ letter-spacing: 0.5px;
+ color: var(--metal-dark);
+ text-align: center;
+ }
+
+ .subtitle {
+ font-size: 12px;
+ color: #64748b;
+ margin-bottom: 5px;
+ text-align: center;
+ }
+
+ /* LAYOUT RESPONSIVO E FULL SCREEN */
+ .main-container {
+ display: grid;
+ grid-template-columns: 1fr 340px;
+ gap: 15px;
+ background-color: #ffffff;
+ border: 1px solid #cbd5e1;
+ border-radius: 12px;
+ padding: 15px;
+ box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+ flex: 1;
+ width: 100%;
+ height: calc(100% - 45px);
+ min-height: 0;
+ }
+
+ /* COLUNA 1: Área do Desenho Técnico CAD Responsivo */
+ .coluna-desenho-container {
+ width: 100%;
+ height: 100%;
+ background-color: var(--bg-cad);
+ border: 1px solid #cbd5e1;
+ border-radius: 8px;
+ overflow: hidden;
+ position: relative;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ }
+
+ .coluna-desenho {
+ position: relative;
+ width: 680px;
+ height: 520px;
+ flex-shrink: 0;
+ transform-origin: center center;
+ }
+
+ /* Grid CAD Background */
+ .coluna-desenho-container::before {
+ content: "";
+ position: absolute;
+ width: 100%;
+ height: 100%;
+ background-image: 
+ linear-gradient(rgba(2, 132, 199, 0.03) 1px, transparent 1px),
+ linear-gradient(90deg, rgba(2, 132, 199, 0.03) 1px, transparent 1px);
+ background-size: 20px 20px;
+ pointer-events: none;
+ z-index: 1;
+ }
+
+ /* COLUNA 2: Painel e Leituras Elétricas */
+ .coluna-dados {
+ display: flex;
+ flex-direction: column;
+ gap: 10px;
+ width: 100%;
+ height: 100%;
+ overflow-y: auto;
+ padding-right: 2px;
+ }
+ /* Estrutura Físico-Mecânica da Bancada */
+ .bancada-metalica {
+ position: absolute;
+ bottom: 40px;
+ left: 20px;
+ width: 640px;
+ height: 20px;
+ background: linear-gradient(to bottom, #64748b, #334155);
+ border-radius: 2px;
+ z-index: 10;
+ }
+ .bancada-perfil {
+ position: absolute;
+ bottom: 0;
+ width: 25px;
+ height: 40px;
+ background: #334155;
+ z-index: 5;
+ }
+ .perfil-esq { left: 50px; }
+ .perfil-dir { right: 50px; }
+ 
+ /* Estilo dos Reservatórios */
+ .reservatorio {
+ position: absolute;
+ bottom: 60px;
+ border: 2px solid var(--acrylic-border);
+ background: var(--acrylic);
+ border-radius: 0 0 8px 8px;
+ box-shadow: inset 0 0 15px rgba(255,255,255,0.7);
+ z-index: 12;
+ }
+ .tampa {
+ position: absolute;
+ top: -12px;
+ left: -2px;
+ height: 12px;
+ background: linear-gradient(to right, #cbd5e1, #f8fafc, #94a3b8);
+ border: 1px solid #64748b;
+ border-radius: 4px 4px 0 0;
+ z-index: 20;
+ }
+ .res-1 { left: 40px; width: 146px; height: 200px; }
+ .res-1 .tampa { width: 150px; }
+ .res-reator { left: 320px; width: 150px; height: 200px; }
+ .res-reator .tampa { width: 154px; }
+ 
+ /* Recipiente Central de Inox (500ml) */
+ .recipiente-inox {
+ position: absolute;
+ bottom: 0;
+ left: 50%;
+ transform: translateX(-50%);
+ width: 60px;
+ height: 160px;
+ background: var(--stainless);
+ border: 1px solid #475569;
+ border-radius: 0 0 4px 4px;
+ z-index: 13;
+ box-shadow: inset 0 -10px 15px rgba(0,0,0,0.1);
+ }
+ /* Fluidos */
+ .fluid-level {
+ position: absolute;
+ bottom: 0;
+ width: 100%;
+ background: var(--water-color);
+ border-top: 2px solid var(--water-border);
+ border-radius: 0 0 6px 6px;
+ z-index: 11;
+ transition: height 0.1s linear;
+ }
+ .inox-fluid {
+ position: absolute;
+ bottom: 0;
+ width: 100%;
+ height: 85%;
+ background: rgba(14, 165, 233, 0.4);
+ border-top: 2px solid #0284c7;
+ z-index: 14;
+ transition: background-color 0.5s;
+ }
+ /* Atuadores */
+ .bomba-submersa {
+ position: absolute;
+ bottom: 2px;
+ width: 32px;
+ height: 28px;
+ background: #1e293b;
+ border: 1px solid #0f172a;
+ border-radius: 3px;
+ z-index: 15;
+ }
+ .res-1 .bomba-submersa { left: 15px; }
+ .res-reator .bomba-submersa { left: 6px; }
+ .bomba-submersa.active {
+ background: #0284c7;
+ box-shadow: 0 0 8px #38bdf8;
+ }
+ /* FAN (Cooler) */
+ .cooler-top {
+ position: absolute;
+ top: -42px;
+ left: 50%;
+ transform: translateX(-50%);
+ width: 70px;
+ height: 30px;
+ background: #1e293b;
+ border: 1px solid #0f172a;
+ border-radius: 3px;
+ z-index: 25;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ font-size: 10px;
+ color: #64748b;
+ }
+ .cooler-top.active {
+ color: #38bdf8;
+ animation: pulseCooler 0.5s infinite alternate;
+ }
+ @keyframes pulseCooler {
+ from { box-shadow: 0 0 2px #38bdf8; }
+ to { box-shadow: 0 0 10px #38bdf8; }
+ }
+ .resistencia-cartucho {
+ position: absolute;
+ top: 20px;
+ left: 15px;
+ width: 10px;
+ height: 110px;
+ background: linear-gradient(90deg, #475569, #cbd5e1, #1e293b);
+ border-radius: 2px;
+ z-index: 16;
+ }
+ .resistencia-cartucho.active {
+ background: linear-gradient(90deg, #ef4444, #fca5a5, #b91c1c);
+ box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+ }
+ /* Sensores e Boias */
+ .sensor-temp {
+ position: absolute;
+ width: 6px;
+ height: 90px;
+ background: #64748b;
+ border-radius: 2px;
+ z-index: 16;
+ }
+ .sensor-inox { top: 25px; right: 15px; }
+ .sensor-anelar { top: 60px; right: 15px; }
+ .sensor-boia {
+ position: absolute;
+ width: 18px;
+ height: 12px;
+ background: #64748b;
+ border-radius: 3px;
+ z-index: 16;
+ transition: background 0.3s;
+ }
+ .boia-superior { top: 45px; right: 4px; }
+ .boia-inferior { bottom: 35px; right: 4px; }
+ .sensor-boia.active {
+ background: #eab308;
+ box-shadow: 0 0 8px #eab308;
+ }
+ /* Mangueiras */
+ .hose-svg {
+ position: absolute;
+ top: 0; left: 0; width: 100%; height: 100%;
+ pointer-events: none; z-index: 18;
+ }
+ .hose-path { fill: none; stroke: #0284c7; stroke-width: 6; stroke-linecap: round; }
+ .flow-dots { fill: none; stroke: #e0f2fe; stroke-width: 3; stroke-dasharray: 6, 12; stroke-linecap: round; display: none; }
+ .flow-active { display: inline; animation: fluidFlow 1s infinite linear; }
+ @keyframes fluidFlow { to { stroke-dashoffset: -18; } }
+ /* Estilos do Painel Elétrico na Lateral Direita */
+ .painel-eletrico {
+ background: linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%);
+ border: 2px solid #475569;
+ border-radius: 6px;
+ box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+ padding: 12px;
+ box-sizing: border-box;
+ width: 100%;
+ }
+ .painel-titulo {
+ font-size: 11px;
+ font-weight: bold;
+ font-family: monospace;
+ text-align: center;
+ border-bottom: 1px solid #cbd5e1;
+ padding-bottom: 5px;
+ margin-bottom: 10px;
+ color: #1e293b;
+ letter-spacing: 0.5px;
+ }
+ .botoes-container {
+ display: flex;
+ justify-content: space-around;
+ align-items: center;
+ }
+ .btn-switch {
+ width: 45px;
+ height: 45px;
+ background: #1e293b;
+ border: 3px solid #64748b;
+ border-radius: 6px;
+ position: relative;
+ cursor: pointer;
+ }
+ .btn-switch::before {
+ content: "";
+ position: absolute;
+ top: 6px;
+ left: 50%;
+ transform: translateX(-50%);
+ width: 20px;
+ height: 12px;
+ background: var(--led-red);
+ border-radius: 2px;
+ }
+ .led-indicador {
+ position: absolute;
+ bottom: 6px;
+ left: 50%;
+ transform: translateX(-50%);
+ width: 8px;
+ height: 8px;
+ background-color: #0f172a;
+ border-radius: 50%;
+ }
+ .btn-switch.active .led-indicador { background-color: var(--led-green); box-shadow: 0 0 8px var(--led-green); }
+ .btn-switch.active::before { background: #22c55e; top: auto; bottom: 20px; }
+ 
+ .btn-emergencia {
+ width: 50px;
+ height: 50px;
+ background: #ef4444;
+ border-radius: 50%;
+ border: 4px solid #b91c1c;
+ box-shadow: 0 4px 0 #7f1d1d;
+ cursor: pointer;
+ }
+ .side-controls { width: 100%; background: #ffffff; border-radius: 6px; box-sizing: border-box; }
+ .status-box { background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 8px; font-size: 12px; }
+ .status-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-weight: 550; }
+ .status-row:last-child { margin-bottom: 0; }
+ .mini-led { width: 8px; height: 8px; background-color: var(--led-red); border-radius: 50%; display: inline-block; }
+ .mini-led.on { background-color: var(--led-green); box-shadow: 0 0 6px var(--led-green); }
+ .param-input { width: 65px; padding: 4px; font-family: monospace; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px; text-align: center; }
+ .tag-tecnica { position: absolute; background: rgba(255,255,255,0.9); border: 1px solid #111; padding: 2px 5px; font-size: 9px; font-family: monospace; font-weight: bold; border-radius: 2px; z-index: 30; }
+ </style>
+</head>
+<body>
+ <div class="watermark">Vsouza</div>
+ <h1>Bancada de Troca Térmica Automatizada SENAI</h1>
+ <div class="subtitle">Projeto Integrador Mecatronica Vsouza</div>
+ <div class="main-container">
+ <section class="coluna-desenho-container">
+ <div class="coluna-desenho" id="cadViewport">
+ <div class="tag-tecnica" style="top: 15px; left: 40px;">RESERVATÓRIO 1 (2L)</div>
+ <div class="tag-tecnica" style="top: 15px; left: 320px;">REATOR (2L)</div>
+ <div class="tag-tecnica" style="top: 215px; left: 410px;">INOX (500ml)</div>
+ <div class="reservatorio res-1">
+ <div class="tampa"></div>
+ <div class="fluid-level" id="fluid-res1" style="height: 90%;"></div>
+ <div class="bomba-submersa" id="bomba1"></div>
+ <div class="cooler-top" id="cooler">FAN</div>
+ </div>
+ <div class="reservatorio res-reator">
+ <div class="tampa"></div>
+ <div class="fluid-level" id="fluid-reator" style="height: 0%;"></div>
+ <div class="recipiente-inox">
+ <div class="inox-fluid" id="fluid-inox"></div>
+ <div class="resistencia-cartucho" id="resistencia"></div>
+ <div class="sensor-temp sensor-inox" id="s-temp-inox"></div>
+ </div>
+ <div class="bomba-submersa" id="bomba2"></div>
+ <div class="sensor-boia boia-superior" id="s-boia-sup"></div>
+ <div class="sensor-boia boia-inferior" id="s-boia-inf"></div>
+ <div class="sensor-temp sensor-anelar" id="s-temp-ane"></div>
+ </div>
+ <div class="bancada-metalica"></div>
+ <div class="bancada-perfil perfil-esq"></div>
+ <div class="bancada-perfil perfil-dir"></div>
+ <svg class="hose-svg">
+ <path class="hose-path" d="M 70 450 L 70 330 Q 70 310, 100 310 L 340 310 Q 360 310, 360 330 L 360 350" />
+ <path class="flow-dots" id="flow-ida" d="M 70 450 L 70 330 Q 70 310, 100 310 L 340 310 Q 360 310, 360 330 L 360 350" />
+ <path class="hose-path" d="M 336 450 L 336 350 Q 336 330, 300 330 L 160 330 Q 130 330, 130 350 L 130 410" />
+ <path class="flow-dots" id="flow-volta" d="M 336 450 L 336 350 Q 336 330, 300 330 L 160 330 Q 130 330, 130 350 L 130 410" />
+ </svg>
+ </div>
+ </section>
+ <section class="coluna-dados">
+ <div class="painel-eletrico">
+ <div class="painel-titulo">PAINEL DE COMANDO ELÉTRICO</div>
+ <div class="botoes-container">
+ <div class="btn-switch" id="mainSwitch" onclick="toggleSystem()" title="Chave Interruptor Liga/Desliga">
+ <div class="led-indicador"></div>
+ </div>
+ <div class="btn-emergencia" onclick="triggerEmergency()" title="Botão de Emergência Tipo Cogumelo"></div>
+ </div>
+ </div>
+ <div class="side-controls">
+ <div class="status-box" style="border-left: 3px solid #64748b; background: #f1f5f9;">
+ <div class="status-row">
+ <span>Taxa Aquecimento (°C/s):</span>
+ <input type="number" id="p-taxa-aquec" class="param-input" value="4.0" step="0.5" min="0.5" max="20">
+ </div>
+ <div class="status-row" style="margin-top: 5px;">
+ <span>Tempo Bombas Simult. (s):</span>
+ <input type="number" id="p-tempo-simult" class="param-input" value="5" min="1" max="60">
+ </div>
+ </div>
+ <div class="status-box">
+ <div class="status-row">
+ <span>Temp. Núcleo Inox:</span>
+ <span id="txt-temp-inox" style="color:#0284c7; font-family:monospace;">25.0 °C</span>
+ </div>
+ <div class="status-row">
+ <span>Temp. Espaço Anelar:</span>
+ <span id="txt-temp-ane" style="color:#64748b; font-family:monospace;">25.0 °C</span>
+ </div>
+ </div>
+ <div class="status-box" style="border-left: 3px solid #f59e0b;">
+ <div class="status-row">
+ <span>Boia Superior (Nível Alto):</span>
+ <span id="txt-boia-sup" style="color:#ef4444;">ABERTO</span>
+ </div>
+ <div class="status-row">
+ <span>Boia Inferior (Nível Baixo):</span>
+ <span id="txt-boia-inf" style="color:#22c55e;">ATUADO</span>
+ </div>
+ </div>
+ <div class="status-box" style="border-left: 3px solid #0284c7;">
+ <div class="status-row">
+ <span>Resistência Incandescente:</span>
+ <div>
+ <span id="txt-resistencia" style="margin-right:5px; color:#ef4444;">DESLIGADA</span>
+ <span id="led-resistencia" class="mini-led"></span>
+ </div>
+ </div>
+ <div class="status-row">
+ <span>Bomba 01 (Envio Frio):</span>
+ <div>
+ <span id="txt-bomba1" style="margin-right:5px; color:#ef4444;">DESLIGADA</span>
+ <span id="led-bomba1" class="mini-led"></span>
+ </div>
+ </div>
+ <div class="status-row">
+ <span>Bomba 02 (Retorno):</span>
+ <div>
+ <span id="txt-bomba2" style="margin-right:5px; color:#ef4444;">DESLIGADA</span>
+ <span id="led-bomba2" class="mini-led"></span>
+ </div>
+ </div>
+ <div class="status-row">
+ <span>Cooler Arrefecedor (Res. 1):</span>
+ <div>
+ <span id="txt-cooler" style="margin-right:5px; color:#ef4444;">DESLIGADA</span>
+ <span id="led-cooler" class="mini-led"></span>
+ </div>
+ </div>
+ </div>
+ <div style="font-size: 11px; background:#e2e8f0; padding:10px; border-radius:4px; font-family:monospace; line-height:1.4;">
+ <strong>Estado Atual do Ciclo:</strong><br>
+ <span id="txt-ciclo-status" style="color:#0f172a; font-weight:bold;">SISTEMA AGUARDANDO PARTIDA</span>
+ </div>
+ </div>
+ </section>
+ </div>
+ <script>
+ let systemActive = false;
+ let loopInterval = null;
+ let temperaturaInox = 25.0;
+ let temperaturaAnelar = 25.0;
+ let nivelReator = 0.0; 
+ let estadoResistencia = false;
+ let estadoBomba1 = false;
+ let estadoBomba2 = false;
+ let estadoCooler = false;
+ let emRegimeSimultaneo = false;
+ let cronometroSimultaneo = 0;
+ let faseEsvaziamentoAtiva = false;
+
+ /* ALGORITMO DE ESCALA RESPONSIVA DINÂMICA (FULL SCREEN SEM DISTORÇÃO) */
+ function ajustarEscalaDesenho() {
+ const container = document.querySelector('.coluna-desenho-container');
+ const viewport = document.getElementById('cadViewport');
+ if (!container || !viewport) return;
+
+ const larguraDisponivel = container.clientWidth - 20;
+ const alturaDisponivel = container.clientHeight - 20;
+
+ const larguraOriginal = 680;
+ const alturaOriginal = 520;
+
+ const escalaX = larguraDisponivel / larguraOriginal;
+ const escalaY = alturaDisponivel / alturaOriginal;
+ const escalaFinal = Math.min(escalaX, escalaY, 1.5); // Limita em até 1.5x para não perder nitidez
+
+ viewport.style.transform = `scale(${escalaFinal})`;
+ }
+
+ window.addEventListener('resize', ajustarEscalaDesenho);
+ window.addEventListener('DOMContentLoaded', ajustarEscalaDesenho);
+ // Executa um pequeno delay para garantir o cálculo correto após renderização inicial
+ setTimeout(ajustarEscalaDesenho, 100);
+
+ function toggleSystem() {
+ systemActive = !systemActive;
+ const btn = document.getElementById('mainSwitch');
+ 
+ if (systemActive) {
+ btn.classList.add('active');
+ estadoResistencia = true;
+ faseEsvaziamentoAtiva = false;
+ loopInterval = setInterval(processoProdutivoFisico, 100);
+ } else {
+ btn.classList.remove('active');
+ shutdownFailsafe();
+ }
+ }
+
+ function triggerEmergency() {
+ systemActive = false;
+ document.getElementById('mainSwitch').classList.remove('active');
+ shutdownFailsafe();
+ alert("EMERGÊNCIA MECATRÔNICA! Sistema desenergizado instantaneamente.");
+ }
+
+ function shutdownFailsafe() {
+ clearInterval(loopInterval);
+ estadoResistencia = estadoBomba1 = estadoBomba2 = estadoCooler = false;
+ emRegimeSimultaneo = false;
+ faseEsvaziamentoAtiva = false;
+ cronometroSimultaneo = 0;
+ atualizarInterfaceGrafica();
+ document.getElementById('txt-ciclo-status').innerText = "SISTEMA DESLIGADO";
+ }
+
+ function processoProdutivoFisico() {
+ if (!systemActive) return;
+ const taxaAquecimentoPorSegundo = parseFloat(document.getElementById('p-taxa-aquec').value) || 4.0;
+ const tempoSimultaneoConfigurado = parseFloat(document.getElementById('p-tempo-simult').value) || 5.0;
+ const acrescimoTermicoClock = taxaAquecimentoPorSegundo / 10;
+
+ if (estadoResistencia) {
+ temperaturaInox += acrescimoTermicoClock; 
+ document.getElementById('txt-ciclo-status').innerText = "FASE 1: AQUECENDO CORPO DO PRODUTO";
+ 
+ if (temperaturaInox >= 50.0) {
+ estadoResistencia = false;
+ estadoBomba1 = true; 
+ }
+ }
+ else if (estadoBomba1 && !emRegimeSimultaneo && !faseEsvaziamentoAtiva) {
+ document.getElementById('txt-ciclo-status').innerText = "FASE 2: ENCHENDO REATOR / TROCA TÉRMICA";
+ 
+ if (nivelReator < 78.0) {
+ nivelReator += 2.0; 
+ }
+ if (temperaturaInox > 25.0) temperaturaInox -= 0.3;
+ if (temperaturaAnelar < 45.0) temperaturaAnelar += 0.2;
+ if (nivelReator >= 78.0) {
+ nivelReator = 78.0; 
+ emRegimeSimultaneo = true;
+ estadoBomba2 = true; 
+ estadoCooler = true; 
+ cronometroSimultaneo = 0;
+ }
+ }
+ else if (emRegimeSimultaneo) {
+ cronometroSimultaneo += 0.1; 
+ document.getElementById('txt-ciclo-status').innerText = `REGIME SIMULTÂNEO: ${cronometroSimultaneo.toFixed(1)}s / ${tempoSimultaneoConfigurado}s`;
+ if (temperaturaInox > 25.0) temperaturaInox -= 0.4;
+ if (temperaturaAnelar > 25.0) temperaturaAnelar -= 0.3;
+ if (cronometroSimultaneo >= tempoSimultaneoConfigurado) {
+ emRegimeSimultaneo = false;
+ faseEsvaziamentoAtiva = true; 
+ }
+ }
+ else if (faseEsvaziamentoAtiva) {
+ if (temperaturaInox <= 30.0 && estadoBomba1) {
+ estadoBomba1 = false;
+ }
+ document.getElementById('txt-ciclo-status').innerText = "FASE 3: RETORNO DO FLUIDO AO RESERVATÓRIO";
+ 
+ if (nivelReator > 0.0) {
+ nivelReator -= 2.5; 
+ }
+ if (nivelReator <= 0.0) {
+ nivelReator = 0.0;
+ estadoBomba2 = false;
+ estadoCooler = false;
+ faseEsvaziamentoAtiva = false;
+ estadoResistencia = true; 
+ }
+ }
+ atualizarInterfaceGrafica();
+ }
+
+ function atualizarInterfaceGrafica() {
+ document.getElementById('txt-temp-inox').innerText = temperaturaInox.toFixed(1) + " °C";
+ document.getElementById('txt-temp-ane').innerText = temperaturaAnelar.toFixed(1) + " °C";
+ document.getElementById('fluid-reator').style.height = nivelReator + "%";
+ document.getElementById('fluid-res1').style.height = (90 - (nivelReator * 0.3)) + "%";
+ const redFactor = Math.min(255, Math.floor((temperaturaInox - 20) * 4));
+ document.getElementById('fluid-inox').style.backgroundColor = `rgba(${redFactor}, 120, 220, 0.4)`;
+ const bSup = document.getElementById('s-boia-sup');
+ const bInf = document.getElementById('s-boia-inf');
+ const tBoiaSup = document.getElementById('txt-boia-sup');
+ const tBoiaInf = document.getElementById('txt-boia-inf');
+ if (nivelReator >= 76.0) {
+ bSup.classList.add('active'); tBoiaSup.innerText = "ATUADO (ALTO)"; tBoiaSup.style.color = "#22c55e";
+ } else {
+ bSup.classList.remove('active'); tBoiaSup.innerText = "ABERTO"; tBoiaSup.style.color = "#ef4444";
+ }
+ if (nivelReator <= 2.0) {
+ bInf.classList.add('active'); tBoiaInf.innerText = "ATUADO (BAIXO)"; tBoiaInf.style.color = "#ef4444";
+ } else {
+ bInf.classList.remove('active'); tBoiaInf.innerText = "FECHADO"; tBoiaInf.style.color = "#22c55e";
+ }
+ toggleAtuador('resistencia', estadoResistencia, 'txt-resistencia', 'led-resistencia');
+ toggleAtuador('bomba1', estadoBomba1, 'txt-bomba1', 'led-bomba1');
+ toggleAtuador('bomba2', estadoBomba2, 'txt-bomba2', 'led-bomba2');
+ toggleAtuador('cooler', estadoCooler, 'txt-cooler', 'led-cooler');
+ document.getElementById('flow-ida').className.baseVal = estadoBomba1 ? "flow-dots flow-active" : "flow-dots";
+ document.getElementById('flow-volta').className.baseVal = estadoBomba2 ? "flow-dots flow-active" : "flow-dots";
+ }
+
+ function toggleAtuador(elemId, estado, textId, ledId) {
+ const el = document.getElementById(elemId);
+ const txt = document.getElementById(textId);
+ const led = document.getElementById(ledId);
+ if (el && txt && led) {
+ if (estado) {
+ el.classList.add('active');
+ txt.innerText = "LIGADO(A)";
+ txt.style.color = "#22c55e";
+ led.classList.add('on');
+ } else {
+ el.classList.remove('active');
+ txt.innerText = "DESLIGADO(A)";
+ txt.style.color = "#ef4444";
+ led.classList.remove('on');
+ }
+ }
+ }
+ </script>
+</body>
+</html>
